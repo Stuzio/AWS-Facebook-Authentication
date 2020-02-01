@@ -1,0 +1,55 @@
+﻿@model AWSFederatedDemoApp.Models.IAMUserSDKModel
+@{ 
+    ViewBag.Title = "AWS IAM User - SDK";
+}
+
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <h2>@ViewBag.Title</h2>
+        </div>
+
+    </div>  
+
+    @using (Html.BeginForm("AWSAction", "IAMUserSDK"))
+    {
+
+        <div class="row">
+            <div class="col-md-4">
+                <h4>Get S3 Buckets</h4>
+                <input type="submit" class="btn btn-default" name="submitButton" value="ListBuckets" />
+                <ul>
+                    <div>
+                        @for (int i = 0; i < Model.AWSBucketList.Count; i++)
+                        {
+                            <li>@Model.AWSBucketList[i]</li>
+                            @Html.HiddenFor(m => m.AWSBucketList[i])
+                        }
+
+                    </div>
+                </ul>
+            </div>
+            <div class="col-md-8">
+
+                <h4>Get S3 Bucket Objects</h4>
+                Bucket Name to List Objects
+                @Html.EditorFor(t => t.AWSBucketToGet, new { htmlAttributes = new { @class = "form-control" } })
+                <input type="submit" class="btn btn-default" name="submitButton" value="ListObjects" />
+                <div><h4>@Model.AWSErrorMsg</h4></div>
+                <ul>
+                    @for (int i = 0; i < Model.AWSObjectList.Count; i++)
+                    {
+                        <li>@Model.AWSObjectList[i]</li>
+                        @Html.HiddenFor(m => m.AWSObjectList[i])
+                    }
+                </ul>
+
+            </div>
+
+        </div>
+
+
+    }
+
+</div>

@@ -1,0 +1,206 @@
+﻿@model AWSFederatedDemoApp.Models.FacebookDemoModel
+@{ 
+
+    ViewBag.Title = "AWS Federated User - Facebook";
+}
+
+<script>
+
+
+
+    function statusChangeCallback(response) {  // Called with the results from FB.getLoginStatus().
+        console.log('statusChangeCallback');
+        console.log(response);   // The current login status of the person.
+
+        if (response.status === 'connected') {   // Logged into your webpage and Facebook.
+            console.log(response.authResponse.accessToken);
+            document.getElementById('facebookUserID').value = response.authResponse.userID;
+            document.getElementById('facebookAccessToken').value = response.authResponse.accessToken;
+            document.getElementById('facebookResoponseRaw').value = JSON.stringify(response, null, 2);
+            testAPI();
+        } else {                                 // Not logged into your webpage or we are unable to tell.
+            document.getElementById('status').innerHTML = 'Please log using Facebook.';
+            document.getElementById('facebookUserID').value = "";
+            document.getElementById('facebookAccessToken').value = "";
+            document.getElementById('facebookResoponseRaw').value = "";
+        }
+    }
+
+
+    function checkLoginState() {               // Called when a person is finished with the Login Button.
+        FB.getLoginStatus(function (response) {   // See the onlogin handler
+            statusChangeCallback(response);
+        });
+    }
+
+    function logOutFB() {
+        FB.logout(function (response) {
+            // Person is now logged out
+            statusChangeCallback(response);
+        });
+    }
+
+    // Initialize
+    window.fbAsyncInit = function () {
+        FB.init({
+            appId: 'YourFacebookID-Here',       // Put Facebook App ID here.  Example:  1234587071555555
+            cookie: true,                       // Enable cookies to allow the server to access the session.
+            xfbml: true,                        // Parse social plugins on this webpage.
+            version: 'v5.0'                     // Use this Graph API version for this call.
+        });
+
+
+
+
+        FB.getLoginStatus(function (response) {   // Called after the JS SDK has been initialized.
+            statusChangeCallback(response);        // Returns the login status.
+        });
+
+    };
+
+    (function (d, s, id) {                      // Load the SDK asynchronously
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) return;
+        js = d.createElement(s); js.id = id;
+        js.src = "https://connect.facebook.net/en_US/sdk.js";
+        fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
+
+    function testAPI() {                      // Testing Graph API after login.  See statusChangeCallback() for when this call is made.
+        console.log('Welcome!  Fetching your information.... ');
+        FB.api('/me', function (response) {
+            console.log('Successful login for: ' + response.name);
+            console.log(response);
+            document.getElementById('status').innerHTML =
+                'Thanks for logging in, ' + response.name + '!';
+        });
+    }
+
+
+</script>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <h2>@ViewBag.Title</h2>
+        </div>
+
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <h4>Step 1: Log in using Facebook</h4>
+
+            <table>
+                <tr>
+                    <td>
+                        <fb:login-button scope="public_profile,email" onlogin="checkLoginState();"></fb:login-button>
+                    </td>
+                    <td>
+                        <button type="button" onclick="logOutFB();">LogOut</button>
+                    </td>
+                </tr>
+            </table>
+
+
+
+        </div>
+
+        <div class="col-md-8">
+            <h4>Response from Facebook</h4>
+            <table>
+                <tr>
+                    <td>Status:</td>
+                    <td><div id="status"></div></td>
+                </tr>
+                <tr>
+                    <td>accessToken:</td>
+                    <td><input type="text" id="facebookAccessToken" size="50" /></td>
+                </tr>
+                <tr>
+                    <td>userID:</td>
+                    <td><input type="text" id="facebookUserID" size="50" /></td>
+                </tr>
+                <tr>
+                    <td>Raw:</td>
+                    <td><textarea id="facebookResoponseRaw" rows="2" cols="50"></textarea></td>
+                </tr>
+            </table>
+
+
+        </div>
+    </div>
+    <hr />
+
+    @using (Html.BeginForm("AWSAction", "FacebookDemo"))
+    {
+
+        <div class="row mx-md-5">
+            <div class="col-md-4">
+                <h4>Step 2: Assume IAM Role</h4>
+                Facebook Access Token 
+                @Html.EditorFor(model => model.FacebookToken, new { htmlAttributes = new { @class = "form-control" } })
+
+                <input type="submit" class="btn btn-default" name="submitButton" value="Assume Role" />
+            </div>
+            <div class="col-md-8 ">
+                <h4>Response from AWS</h4>
+                <table>
+                    <tr>
+                        <td>AWS Access Key</td>
+                        <td>@Html.TextBoxFor(t => t.AWSAccessKeyID, new { style = "width:200px;" })</td>
+                    </tr>
+                    <tr>
+                        <td>AWS Secret Key</td>
+                        <td>@Html.TextBoxFor(t => t.AWSSecretAccessKey, new { style = "width:200px;" })</td>
+                    </tr>
+                    <tr>
+                        <td>AWS Token</td>
+                        <td>@Html.TextBoxFor(t => t.AWSSessionToken, new { style = "width:200px;" })</td>
+                    </tr>
+
+                </table>
+               
+            </div>
+
+        </div>
+        <hr />
+        <div class="row">
+            <div class="col-md-4">
+                <h4>Step 3: Get S3 Buckets</h4>
+                <input type="submit" class="btn btn-default" name="submitButton" value="ListBuckets" />
+                <ul>
+                    <div>
+                        @for (int i = 0; i < Model.AWSBucketList.Count; i++)
+                        {
+                            <li>@Model.AWSBucketList[i]</li>
+                            @Html.HiddenFor(m => m.AWSBucketList[i])
+                        }
+
+                    </div>
+                </ul>
+            </div>
+            <div class="col-md-8">
+
+                <h4>Step 4: Get S3 Bucket Objects</h4>
+                Bucket Name to List Objects
+                @Html.EditorFor(t => t.AWSBucketToGet, new { htmlAttributes = new { @class = "form-control" } })
+                <input type="submit" class="btn btn-default" name="submitButton" value="ListObjects" />
+                <div><h4>@Model.AWSErrorMsg</h4></div>
+                <ul>
+                    @for (int i = 0; i < Model.AWSObjectList.Count; i++)
+                    {
+                        <li>@Model.AWSObjectList[i]</li>
+                        @Html.HiddenFor(m => m.AWSObjectList[i])
+                    }
+                </ul>
+                
+            </div>
+
+        </div>
+
+
+    }
+
+</div>
